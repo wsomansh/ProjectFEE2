@@ -2,11 +2,17 @@ import { Link } from 'react-router-dom'
 import SceneArt from '../common/SceneArt.jsx'
 import { Pill } from '../common/Badges.jsx'
 import { useWishlist } from '../../context/WishlistContext.jsx'
+import { useUnsplashImage } from '../../hooks/useUnsplashImage.js'
+import { getDestinationImage } from '../../data/destinationImages.js'
 
 export default function StateCard({ state, size = 'md' }) {
   const { isWishlisted, toggleWishlist } = useWishlist()
   const wishId = `state-${state.id}`
   const saved = isWishlisted(wishId)
+
+  // fetch real Unsplash photo; fallback to SceneArt if not available
+  const query = getDestinationImage(state.id)
+  const { url: photoUrl, loading } = useUnsplashImage(query)
 
   const heights = {
     sm: 'aspect-[4/5]',
@@ -17,7 +23,18 @@ export default function StateCard({ state, size = 'md' }) {
   return (
     <div className={`group relative block ${heights[size]} overflow-hidden rounded-3xl shadow-lift transition-transform duration-500 hover:-translate-y-1`}>
       <Link to={`/destination/${state.id}`} className="absolute inset-0">
-        <SceneArt scene={state.scene} accent={state.accent} seed={state.id} className="absolute inset-0 h-full w-full transition-transform duration-700 group-hover:scale-110" />
+        {/* Real photo if loaded, shimmer while loading, SceneArt as fallback */}
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt={state.name}
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+        ) : loading ? (
+          <div className="absolute inset-0 animate-pulse bg-ink/20" />
+        ) : (
+          <SceneArt scene={state.scene} accent={state.accent} seed={state.id} className="absolute inset-0 h-full w-full transition-transform duration-700 group-hover:scale-110" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/10 to-transparent opacity-90" />
       </Link>
       <button
